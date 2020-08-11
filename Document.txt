@@ -1,0 +1,90 @@
+Doc source: http://madopick.com
+
+______________ Winbond SPI Flash pada Nordic BLE _____________
+
+Kali ini kita akan belajar mengenai Winbond SPI Flash, kebetulan kami memiliki winbond SPI flash seri W25Q32 dan w25x20cl. Perbedaan spesifikasi beberapa seri winbond ditampilkan adalah sebagai berikut:
+
+a. W25Q32 = 32M bit, 16.384 pages. 1024 sectors, 64 blocks (64KB).
+
+b. W25Q16 = 16M bit, 8.192 pages, 512 sectors, 32 blocks (64 KB).
+
+c. W25Q80 = 8M bit, 4096 pages, 256 sectors, 16 blocks (64 KB).
+
+d. W25X20CL = 2M bit, 1024 pages, 64 sectors, 4 blocks (64KB).
+
+Sebelum mengulas winbond SPI flash maka pertama tama akan kita bahas sejarah spi flash terlebih dahulu. SPI flash adalah salah satu jenis non volatile memory yang diperkenalkan oleh Intel pada tahun 1988 sebagai pengganti teknologi penyimpanan EPROM/EEPROM. Memory non volatile digunakan untuk menyimpan suatu nilai tanpa tergantung pasokan listrik. Winbond SPI flash adalah non volatile berjenis NOR, sedangkan non volatile berjenis NAND dapat kita temukan pada perangkat seperti usb flash disk, solid state disk (SSD) dll. Dibandingkan dengan EPROM ( erasable programmable read-only memory) maka SPI Flash memiliki kapasitas penyimpanan yang jauh lebih besar dibanding EPROM. SPI Flash memiliki kekurangan dalam hal umur write cycle yang lebih rendah dibanding EPROM. Tidak seperti EEPROM yang memiliki kemampuan untuk menulis/menghapus dalam ukuran single byte, SPI flash bekerja berdasar block dalam proses menulis/menghapus, sehingga dikenal besaran page, sektor dan block dalam spi flash yang akan kita pelajari nanti.
+
+Dibandingkan dengan teknologi NAND maka SPI flash (NOR) ini memiliki kecepatan hapus yang jauh lebih besar yaitu sekitar 5 detik dibandingkan dengan NAND yang mampu menghapus hingga 3ms. NAND juga memiliki umur tulis/hapus yang jauh lebih tinggi dibanding teknologi NOR sehingga banyak teknologi memory NAND yang dipakai pada komputer generasi terbaru. Walaupun memiliki kelemahan dibanding NAND, SPI flash (NOR) sangat banyak digunakan dalam dunia embedded karena memiliki kelebihan dalam kemudahan interfacingnya karena cukup menggunakan komunikasi spi.
+
+Sebelum belajar mengenai proses baca/tulis pada SPI flash kita perlu mengenal apa itu pages, sectors dan blocks. Pages berhubungan dengan proses tulis yaitu adalah ukuran terbesar dari SPI flash yang dapat ditulis dalam 1 cycle yaitu sebesar 256 bytes. sedangkan sectors adalah  ukuran terkecil dari SPI flash yang dapat dihapus yaitu sebesar 4 KB. Block sendiri dapat terbagi atas ukuran 32 KB atau 64 KB.  Berikut adalah beberapa register pada winbond SPI flash yang perlu diketahui.
+
+ 
+
+1. JEDEC ID (9Fh)
+
+Untuk memastikan apakah driver SPI yang kita gunakan dapat berjalan dapat kita lakukan dengan membaca JEDEC ID dari SPI flash ini. Dengan mengirimkan nilai 9Fh ke Flash melalui SPI maka SPI flash akan membalas dengan mengirimkan manufaktur ID (EFh), memory type & kapasitas SPI flash (4016h).
+
+2. Status Register (05h)
+
+Untuk memastikan kita dapat menulis suatu data pada SPI flash maka kita perlu membaca status register windbond SPI flash terlebih dahulu. Pada w25Q32 terdapat dua buah status register yaitu alamat 05h dan 35h (Pada seri lain yang lebih kecil hanya memiliki 1 buah status register). Status register tersebut akan menunjukkan block mana saja yang diprotect, serta kondisi operasi flash (busy/not busy) dan flag write enable telah diset atau tidak. Untuk percobaan dan memastikan seluruh area flash dapat ditulis maka sebaiknya kirim nilai 0x00 pada write status register (01h).
+
+ 
+
+Apabila ketika membaca status register ini kita melihat busy flag (bit ke dua) bernilai 1, maka proses write ke dalam SPI flash tidak dapat dilakukan. Kondisi busy yang cukup lama dapat terjadi ketika kita melakukan proses hapus seperti sector erase (20h), Block erase (52h) maupun chip erase (60h).
+
+ 
+
+3. Write enable (06h)
+
+Sebelum melakukan proses tulis pada alamat (02h) ataupun proses hapus, maka wajib memanggil register ini terlebih dahulu. Bit pertama pada status register (o5h) akan terset apabila kita telah berhasil mengaktifkan register write enable.
+
+ 
+
+4. Page Program (02h)
+
+Setelah mengaktifkan write enable, kita dapat menulis data yang kita hendaki hingga 256 byte. Untuk melakukan penulisan dengan register ini maka kita perlu menuliskan alamat dimana data tersebut akan disimpan (24 bit) kemudian diikuti nilai data yang akan disimpan. Di bawah ini adalah contoh menuliskan data sebanyak 256 byte dengan nilai sebesar 0xAB pada nordic BLE.
+
+void flash_write_page(void)
+{
+
+         memset(m_rx_buf, 0, m_rx_length);
+         m_write_page[0] = 0x02;
+
+         m_write_page[1] = (m_page >> 8);
+
+         m_write_page[2] = m_page;
+
+         m_write_page[3] = m_offset;
+
+         for(int i=0;i<256;i++){
+                   m_write_page[4+i] = 0xAB;
+          }
+
+         APP_ERROR_CHECK(nrf_drv_spi_transfer(&spi, m_write_page, 255, m_rx_buf, 1 ));
+}
+
+ 
+
+5. Read Data (03h).
+
+Untuk melakukan pembacaan suatu alamat pada flash maka kita perlu memberikan alamat yang akan dibaca dalam 24 bit dan buffer yang diperlukan. Semisal kita ingin membaca sebesar 256 bytes maka kita perlu juga menyediakan buffer sebesar 256 juga.
+
+ 
+
+void flash_read_page(void)
+{
+
+          // Reset rx buffer and transfer done flag
+          memset(m_read_page, 0, 255);
+
+          m_tx_buf[0] = FLASH_READDATA;
+          m_tx_buf[1] = (m_page_read >> 8);
+          m_tx_buf[2] = m_page_read;
+          m_tx_buf[3] = m_offset_read;
+
+         APP_ERROR_CHECK(nrf_drv_spi_transfer(&spi, m_tx_buf, 4, m_read_page, 255));
+}
+
+ 
+
+bersambung ….
