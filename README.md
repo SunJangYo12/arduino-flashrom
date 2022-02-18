@@ -17,18 +17,19 @@ tools ghex atau yang lain<br>
     $ sudo apt install flashrom
 
 2). Compile & Flash<br>
-      sudo -s<br>
+      Edit Makefile line 34 SERIAL_DEV ?= /dev/ttyUSB... example ttyUSB1
+      Edit Makefile line 112 ttyUSB... example ttyUSB1
       make mega2560<br>
- 	  make flash-mega2560<br>
-      flashrom -p serprog:dev=/dev/ttyUSB1:115200 <br>
-      flashrom -p serprog:dev=/dev/ttyUSB1:115200 -r tenda.rom<br>
-      flashrom -p serprog:dev=/dev/ttyUSB1:115200 -w tenda.rom<br>
+ 	  sudo make flash-mega2560<br>
+      sudo flashrom -p serprog:dev=/dev/ttyUSB1:115200 <br>
+      sudo flashrom -p serprog:dev=/dev/ttyUSB1:115200 -r tenda.rom<br>
+      sudo flashrom -p serprog:dev=/dev/ttyUSB1:115200 -w tenda.rom<br>
 
 NOTE: untuk pilihan board arduino bisa 
 dilihat di file Makefile dan untuk saat 
 ini saya menggunankan board mega2560
-dengan pin sebagai berikut:
-1) MISO pin 50
-2) MOSI pin 51
-3) SCK  pin 52
-4) SS   pin 53
+dan rom winbond 25Q64JVSIQ dengan pin sebagai berikut:
+1) MISO (pin 2) arduino pin 50
+2) MOSI (pin 5) arduino pin 51
+3) SCK (pin 6) arduino pin 52
+4) SS (pin 1)  arduino pin 53
