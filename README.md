@@ -17,13 +17,15 @@ tools ghex atau yang lain<br>
     $ sudo apt install flashrom
 
 2). Compile & Flash<br>
-      Edit Makefile line 34 SERIAL_DEV ?= /dev/ttyUSB... example ttyUSB1
+      Edit Makefile line 34 SERIAL_DEV ?= /dev/ttyUSB... example ttyUSB1<br>
       Edit Makefile line 112 ttyUSB... example ttyUSB1
       make mega2560<br>
  	  sudo make flash-mega2560<br>
       sudo flashrom -p serprog:dev=/dev/ttyUSB1:115200 <br>
       sudo flashrom -p serprog:dev=/dev/ttyUSB1:115200 -r tenda.rom<br>
-      sudo flashrom -p serprog:dev=/dev/ttyUSB1:115200 -w tenda.rom<br>
+      sudo flashrom -p serprog:dev=/dev/ttyUSB1:115200 -w tenda.rom<br><br>
+      jika reading flash lama, turunkan kecepatan reading dengan command sbb<br>
+      sudo flashrom -p serprog:dev=/dev/ttyUSB1:115200,spispeed=1M -r tenda.rom<br>
 
 NOTE: untuk pilihan board arduino bisa 
 dilihat di file Makefile dan untuk saat 
